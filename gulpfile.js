@@ -6,7 +6,7 @@ const { exec, spawn } = require("child_process");
 
 let electronProcess;
 function runElectron() {
-  electronProcess = spawn("yarn", ["start"], {
+  electronProcess = spawn("yarn", ["electron"], {
     shell: true,
   });
   electronProcess.on("close", () => {

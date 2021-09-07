@@ -15,13 +15,13 @@ function InteractingContent() {
       <div className="col-1 ">
         <ul>
           <li
-            className="mb-2 btn btn-primary"
+            className="mb-2 btn"
             data-bs-placement="left"
             data-bs-animation="false"
             title="file info"
             id="file1"
           >
-            file
+            File
           </li>
           <li
             className="mb-2 btn btn-primary"

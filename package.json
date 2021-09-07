@@ -12,17 +12,22 @@
     }
   },
   "scripts": {
-    "start": "electron . --inspect",
+    "electron": "electron . --inspect",
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
-    "watch": "yarn start && webpack --watch"
+    "watch": "yarn start && webpack --watch",
+    "start": "gulp"
   },
   "dependencies": {
     "@popperjs/core": "^2.9.3",
+    "axios": "^0.21.1",
     "bootstrap": "^5.1.0",
     "electron-reload": "^2.0.0-alpha.1",
     "react": "^17.0.2",
-    "react-dom": "^17.0.2"
+    "react-dom": "^17.0.2",
+    "react-redux": "^7.2.4",
+    "redux": "^4.1.1",
+    "socket.io-client": "^4.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.15.0",

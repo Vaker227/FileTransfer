@@ -1,7 +1,8 @@
 import React from "react";
 import { Dropdown } from "bootstrap";
+import { connect } from "react-redux";
 
-function UserDropDown() {
+function UserDropDown(props) {
   return (
     <div className="dropdown">
       <button
@@ -9,7 +10,7 @@ function UserDropDown() {
         data-bs-toggle="dropdown"
         id="user-info-toggle"
       >
-        Link Do
+        {props.user.name}
       </button>
       <ul className="dropdown-menu">
         <li>
@@ -35,4 +36,16 @@ function UserDropDown() {
   );
 }
 
-export default UserDropDown;
+const UserInfoSTP = (state) => {
+  return { user: state.user };
+};
+const UserInfoDTP = (dispatch) => {
+  return {
+    test: function () {
+      return dispatch({ type: "test" });
+    },
+  };
+};
+const ReduxedUserDropDown = connect(UserInfoSTP, UserInfoDTP)(UserDropDown);
+
+export default ReduxedUserDropDown;

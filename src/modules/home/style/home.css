@@ -7,6 +7,28 @@ ul {
   padding: 0;
 }
 
+.btn-success-custom {
+  color: white;
+  background-color: #48d425;
+  border-color: #48d425;
+}
+.btn-success-custom:hover {
+  color: white;
+  background-color: #32b337;
+  border-color: #278d2a;
+}
+.btn-success-custom:focus {
+  color: white;
+  background-color: #32b337;
+  border-color: #278d2a;
+  box-shadow: 0 0 0 0.25rem rgba(7, 169, 12, 0.25);
+}
+
+.modal-footer .btn {
+  font-size: 1.5rem;
+  padding: 0px 12px;
+}
+
 body {
   padding-top: 10px;
   background-color: #c8fabe;
@@ -58,6 +80,27 @@ body {
 }
 #clients-view-body .row:hover {
   background-color: rgba(0, 0, 0, 0.075);
+}
+
+#clients-view-body label {
+  display: block;
+}
+#clients-view-body input {
+  display: none;
+}
+#clients-view-body input:checked + div::before {
+  position: absolute;
+  left: 14px;
+  top: 8px;
+  color: yellowgreen;
+  font-weight: 600;
+  content: "\f3c5";
+  font-family: "Font Awesome 5 Free";
+}
+#clients-view-body input:checked + div:hover {
+}
+#clients-view-body .row div {
+  padding: 0.5rem 0.5rem;
 }
 
 /* clients-view-body scrollball */
