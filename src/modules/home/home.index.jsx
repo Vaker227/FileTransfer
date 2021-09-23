@@ -15,7 +15,7 @@ function App() {
     socketIO.connect();
   }, []);
   return (
-    <div>
+    <div >
       <Header />
       <ClientList />
       <InteractingView />
