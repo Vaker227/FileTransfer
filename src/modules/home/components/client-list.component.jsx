@@ -23,7 +23,7 @@ function ClientStatus(props) {
       status = (
         <div className="client-status error">
           <i className="fas fa-exclamation-triangle"></i>
-          {props.status[0].toUpperCase() + props.status.slice(1)}
+          <span className="text-capitalize">{props.status}</span>
         </div>
       );
       break;

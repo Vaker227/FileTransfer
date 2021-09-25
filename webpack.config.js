@@ -1,12 +1,14 @@
 // const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
 module.exports = {
-  mode:'development',
+  mode: "development",
   // plugins: [
   //   new BundleAnalyzerPlugin()
   // ],
   entry: {
-    home: "./src/modules/home/home.index.jsx",
+    home: {
+      import: ["@babel/polyfill", "./src/modules/home/home.index.jsx"],
+    },
     login: "./src/modules/login/login.index.jsx",
   },
   output: {
@@ -35,8 +37,8 @@ module.exports = {
     splitChunks: {
       cacheGroups: {
         vendors: {
-          name: 'vendors',
-          chunks: 'initial',
+          name: "vendors",
+          chunks: "initial",
           test: /[\\/]node_modules[\\/]/,
         },
       },

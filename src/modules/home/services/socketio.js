@@ -3,11 +3,12 @@ const store = require("../../redux/store");
 
 const { getPublicIP } = require("../services/client.service");
 const helper = require("../../helper");
+const webRTC = require("../services/webrtc.service");
 
 let socket;
 
 module.exports.connect = function () {
-  socket = io("http://localhost:3000/");
+  socket = io("https://file-transfers.herokuapp.com/");
   socket.on("connect", () => {
     getPublicIP()
       .then((res) => {
@@ -33,6 +34,7 @@ module.exports.connect = function () {
       data: helper.notiMessage("Disconnected from server"),
     });
     store.dispatch({ type: "DISCONNECT_PRIVATE_CONNECTION" });
+    webRTC.closeChannel();
   });
   // receiver
   socket.on("request-private-connection", (requestedSocketID) => {
@@ -46,10 +48,10 @@ module.exports.connect = function () {
       type: "DISCONNECT_PRIVATE_CONNECTION",
       data: helper.notiMessage("Connected user leaved room "),
     });
+    webRTC.closeChannel();
   });
   // update target data
   socket.on("update-target-user-data", (targetData) => {
-    console.log(targetData);
     store.dispatch({ type: "UPDATE_TARGET_DATA", data: targetData });
   });
 
@@ -63,6 +65,29 @@ module.exports.connect = function () {
       });
     }
   });
+  // exchange file
+  socket.on("private-exchange-file", (data) => {
+    if (data.type == "offer") {
+      store.dispatch({ type: "ADD_FILE_LIST", data: data.data });
+      return;
+    }
+    if (data.type == "reject") {
+      store.dispatch({
+        type: "UPDATE_STATE_FILE",
+        data: { state: "reject", id: data.data },
+      });
+      return;
+    }
+    if (data.type == "accept") {
+      store.dispatch({
+        type: "UPDATE_STATE_FILE",
+        data: { state: "downloading", id: data.data },
+      });
+      return;
+    }
+  });
+  // RTC data
+  socket.on("signal-data", webRTC.handleChannel);
 };
 
 let receiveTimeoutHandle;
@@ -118,9 +143,7 @@ module.exports.connectPrivate = (targetSocketID) => {
       });
       return;
     }
-    console.log(response);
     const roomID = response.split(": ")[1];
-    console.log("Room ID: ", roomID);
     store.dispatch({
       type: "END_REQUESTING_PRIVATE_CONNECTION",
       data: "success",
@@ -133,6 +156,7 @@ module.exports.connectPrivate = (targetSocketID) => {
         message: helper.notiMessage("Connected to private room"),
       },
     });
+    webRTC.startChannel();
   });
 };
 module.exports.disconnectPrivate = (roomID) => {
@@ -142,6 +166,7 @@ module.exports.disconnectPrivate = (roomID) => {
         type: "DISCONNECT_PRIVATE_CONNECTION",
         data: helper.notiMessage("Leaved private room"),
       });
+      webRTC.closeChannel();
     }
   });
 };
@@ -164,3 +189,20 @@ module.exports.sendMessage = (message, roomID) => {
     roomID
   );
 };
+
+module.exports.exchangeFile = (data, roomID) => {
+  //data type fileInfo
+  socket.emit("private-exchange-file", { type: "offer", data }, roomID);
+};
+module.exports.rejectFile = (fileId) => {
+  socket.emit(
+    "private-exchange-file",
+    { type: "reject", data: fileId },
+    store.getState().privateConnection.roomID
+  );
+};
+
+const sendRTCData = (data) => {
+  socket.emit("signal-data", data, store.getState().privateConnection.roomID);
+};
+module.exports.sendRTCData = sendRTCData;

@@ -2,6 +2,8 @@ const path = require("path");
 const os = require("os");
 const { app, BrowserWindow, session } = require("electron");
 
+let win;
+
 require("electron-reload")(
   ["./src/modules/home/*.html", "./preload.js", "./src/dist/**"],
   {
@@ -23,7 +25,7 @@ const reduxDevToolsPath = path.join(
 );
 
 app.whenReady().then(() => {
-  require("./src/modules/home/home")();
+  win = require("./src/modules/home/home")();
   session.defaultSession
     .loadExtension(reduxDevToolsPath, { allowFileAccess: true })
     .then((data) => console.log("loaded: " + data.name));

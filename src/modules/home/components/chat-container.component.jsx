@@ -2,10 +2,11 @@ import React, { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { connect } from "react-redux";
 import { Tooltip } from "bootstrap";
 
+import "../style/waiting.css";
 import helper from "../../helper";
 import socketIO from "../services/socketio";
 
-function FileDownloadInfo() {
+function FileDownloadInfo(props) {
   const fileName = useRef();
   const fileProgress = useRef();
   useEffect(() => {
@@ -16,18 +17,33 @@ function FileDownloadInfo() {
       fileProgressToolTip.dispose();
     };
   }, []);
-  const size = 1231654987;
+  useEffect(() => {
+    if (props.fileInfo.state === "reject" && !props.haveNoti) {
+      setTimeout(() => {
+        props.removeFile(props.fileInfo.id);
+      }, 3000);
+    }
+  }, [props.fileInfo.state, props.haveNoti]);
+  const handleAcceptFile = () => {};
+  const handleRejectFile = () => {
+    props.removeFile(props.fileInfo.id);
+    socketIO.rejectFile(props.fileInfo.id);
+  };
+
   const sizeObj = useMemo(() => {
-    return helper.changeSizeValue(size);
-  }, [size]);
+    return helper.changeSizeValue(props.fileInfo.size);
+  }, [props.fileInfo.size]);
+  const myFile = useMemo(() => {
+    return props.fileInfo.origin == props.user.socketID;
+  }, [props.fileInfo.origin, props.user.socketID]);
   return (
     <div className="file-download-info row">
       <div className="col-1">
         <i
-          className="fas fa-download"
+          className={`fas fa-${myFile ? "upload" : "download"}`}
           data-bs-toggle="tooltip"
           data-bs-placement="left"
-          title="Download"
+          title={myFile ? "Send" : "Receive"}
           ref={fileProgress}
         ></i>
       </div>
@@ -36,13 +52,13 @@ function FileDownloadInfo() {
           className="far fa-file "
           data-bs-toggle="tooltip"
           data-bs-placement="right"
-          title="Tooltip on bottom"
+          title={props.fileInfo.name}
           style={{ fontSize: 20 }}
           ref={fileName}
         ></i>
       </div>
       {/* receiver downloading */}
-      <div className="col">
+      {/* <div className="col">
         <div className="progress">
           <div
             className="progress-bar "
@@ -54,24 +70,67 @@ function FileDownloadInfo() {
         </div>
       </div>
       <div className="col-1">
-        <div class="spinner-grow text-primary"></div>
-      </div>
-      {/* receiver Accept of reject */}
-      {/* <div className="col">
-        {sizeObj.value} {sizeObj.type}
-      </div>
-      <div className="col-2 btn btn-sm btn-success">
-        <i className="far fa-check-circle"></i>
-      </div>
-      <div className="col-2 btn btn-sm btn-danger">
-        <i className="far fa-times-circle"></i>
+        <div className="spinner-grow text-primary"></div>
       </div> */}
+      {/* sender rejected */}
+      {props.fileInfo.state == "reject" && (
+        <>
+          <div className="col">File was rejected</div>
+          <div className="col-1 me-2 text-danger">
+            <i className="fas fa-exclamation-triangle"></i>
+          </div>
+        </>
+      )}
+      {/* sender waiting */}
+      {props.fileInfo.state == "waiting" && myFile && (
+        <>
+          <div className="col">Waiting</div>
+          <div className="col-1 me-3 pt-2 text-danger">
+            <div className="dot-elastic"></div>
+          </div>
+        </>
+      )}
+      {/* receiver selecting */}
+      {props.fileInfo.state == "waiting" && !myFile && (
+        <>
+          <div className="col">
+            {sizeObj.value} {sizeObj.type}
+          </div>
+          <div
+            className="col-2 btn btn-sm btn-success"
+            onClick={handleAcceptFile}
+          >
+            <i className="far fa-check-circle"></i>
+          </div>
+          <div
+            className="col-2 btn btn-sm btn-danger"
+            onClick={handleRejectFile}
+          >
+            <i className="far fa-times-circle"></i>
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
+const FileDownloadInfoSTP = (state) => {
+  return { user: state.user };
+};
+const FileDownloadInfoDTP = (dispatch) => {
+  return {
+    removeFile: function (fileId) {
+      return dispatch({ type: "REMOVE_FILE_LIST", data: fileId });
+    },
+  };
+};
+
+const FileDownloadInfoReduxed = connect(
+  FileDownloadInfoSTP,
+  FileDownloadInfoDTP
+)(FileDownloadInfo);
+
 function FileManage(props) {
-  const [fileManagerNoti, setFileManagerNoti] = useState(true);
   return (
     <div id="file-manager" className="dropdown">
       <button
@@ -79,11 +138,13 @@ function FileManage(props) {
         data-bs-toggle="dropdown"
         data-bs-auto-close="false"
         onClick={() => {
-          setFileManagerNoti(!fileManagerNoti);
+          if (props.fileManager.haveNoti) {
+            props.removeNoti();
+          }
         }}
       >
         File Manager
-        {fileManagerNoti ? (
+        {props.fileManager.haveNoti ? (
           <span
             className="position-absolute top-0 start-0 translate-middle bg-danger rounded-circle"
             style={{
@@ -96,12 +157,40 @@ function FileManage(props) {
         )}
       </button>
       <ul className="dropdown-menu dropdown-menu-end">
-        <FileDownloadInfo />
-        <FileDownloadInfo />
+        {props.fileManager.list.length == 0 ? (
+          <div className={"text-center fst-italic "}>Empty</div>
+        ) : (
+          props.fileManager.list.map((file, inx) => {
+            return (
+              <FileDownloadInfoReduxed
+                fileInfo={file}
+                haveNoti={props.fileManager.haveNoti}
+                key={inx}
+              />
+            );
+          })
+        )}
+
+        {/* <FileDownloadInfo /> */}
       </ul>
     </div>
   );
 }
+
+const FileManageSTP = (state) => {
+  return {
+    fileManager: state.fileManager,
+  };
+};
+const FileManageDTP = (dispatch) => {
+  return {
+    removeNoti: function () {
+      return dispatch({ type: "REMOVE_NOTI" });
+    },
+  };
+};
+
+const FileManageReduxed = connect(FileManageSTP, FileManageDTP)(FileManage);
 
 function Message(props) {
   const tooltipRef = useRef(null);
@@ -145,11 +234,6 @@ function ChatContainer(props) {
     const chatContent = document.getElementById("chat-content");
     chatContent.scrollTop = chatContent.scrollHeight;
   }, [props.privateConnection.historyLog]);
-  useEffect(() => {
-    window.test = (textTemp) => {
-      socketIO.sendMessage(textTemp);
-    };
-  }, []);
   const handleSendClick = () => {
     if (text == "") {
       return;
@@ -162,7 +246,7 @@ function ChatContainer(props) {
   };
   return (
     <div id="chat-container" className="col-9 bg-white">
-      <FileManage />
+      <FileManageReduxed />
       <div id="chat-content" className="">
         <ul>
           {props.privateConnection.historyLog.map((dataMessage, inx) => (

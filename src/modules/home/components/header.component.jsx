@@ -119,9 +119,7 @@ function CheckNAT(props) {
           style={{ width: "1rem", height: "1rem", borderWidth: "0.2rem" }}
         ></div>
       ) : (
-        `${
-          props.status.natType[0].toUpperCase() + props.status.natType.slice(1)
-        } NAT`
+        <span className="text-capitalize">{props.status.natType} NAT</span>
       )}
     </div>
   );

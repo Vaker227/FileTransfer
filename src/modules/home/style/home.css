@@ -233,6 +233,7 @@ body {
   background-color: transparent;
 }
 #webrtc-status {
+  user-select: none;
   color: white;
   font-size: 1rem;
   font-weight: bold;

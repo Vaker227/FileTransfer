@@ -27,7 +27,7 @@ const defaultState = {
     natType: "checking",
   },
   fileManager: {
-    list: [], // file type {name,size,modified(milisecond)}
+    list: [], // file type {name,size,modified(milisecond),id ,origin ,state (waiting, downloading, reject) }
     haveNoti: false,
   },
   webRTC: {
@@ -39,7 +39,7 @@ const userReducer = (state = {}, action) => {
   switch (action.type) {
     case "UPDATE_IP":
       return Object.assign({}, state, {
-        ip: action.data.ip,
+        ip: action.data.ip.replace("::ffff:", ""),
         port: action.data.port,
       });
     case "DISCONNECT_FROM_SERVER":
@@ -167,12 +167,26 @@ const statusReducer = (state = {}, action) => {
 const fileManagerReducer = (state = {}, action) => {
   switch (action.type) {
     case "ADD_FILE_LIST":
-      return Object.assign({}, state, { list: [...state.list, action.data] });
-    case "REMOVE_FILE_LIST":
-      const newList = state.list.filter((file) => {
-        return file.modified != action.data;
+      return Object.assign({}, state, {
+        list: [...state.list, action.data],
+        haveNoti: true,
       });
-      return Object.assign({}, state, { list: newList });
+    case "REMOVE_FILE_LIST":
+      const newListRemove = state.list.filter((file) => {
+        return file.id != action.data;
+      });
+      return Object.assign({}, state, { list: newListRemove, haveNoti: true });
+    case "UPDATE_STATE_FILE":
+      // action.data: {status(downloading, reject) ,id}
+      const newListUpdate = state.list.map((fileInfo) => {
+        if (fileInfo.id == action.data.id) {
+          return Object.assign({}, fileInfo, { state: action.data.state });
+        }
+        return fileInfo;
+      });
+      return Object.assign({}, state, { list: newListUpdate, haveNoti: true });
+    case "REMOVE_NOTI":
+      return Object.assign({}, state, { haveNoti: false });
     default:
       return state;
   }

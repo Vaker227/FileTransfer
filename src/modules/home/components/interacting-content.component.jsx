@@ -1,35 +1,36 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { connect } from "react-redux";
 import { Tooltip } from "bootstrap";
 
+import socketIO from "../services/socketio";
 import helper from "../../helper";
+import webRTC from "../services/webrtc.service";
 import ChatContainer from "./chat-container.component.jsx";
 
 function WebRTCStatus(props) {
   // state : idle , new , checking , connected , completed, failed
-  const [webRTCState, setWebRTCState] = useState("checking");
-  let currentProgress = {};
-  switch (webRTCState) {
-    case "idle":
-      currentProgress = { color: "gray", value: 0, text: "" };
-      break;
-    case "new":
-      currentProgress = { color: "#0d6efd", value: 10, text: "Initialize new" };
-      break;
-    case "checking":
-      currentProgress = { color: "#ffc107", value: 60, text: "Checking" };
-      break;
-    case "connected":
-      currentProgress = { color: "#45ab41", value: 80, text: "Connected" };
-      break;
-    case "completed":
-      currentProgress = { color: "#05ab00", value: 100, text: "Ready to use" };
-      break;
-    case "failed":
-      currentProgress = { color: "#dc3545", value: 100, text: "Failed" };
-      break;
-    default:
-      break;
-  }
+  const currentProgress = useMemo(() => {
+    switch (props.webRTC.status) {
+      case "new":
+        return { color: "#0d6efd", value: 10, text: "Initialize new" };
+
+      case "checking":
+        return { color: "#ffc107", value: 60, text: "Checking" };
+
+      case "connected":
+        return { color: "#45ab41", value: 80, text: "Connected" };
+
+      case "completed":
+        return { color: "#05ab00", value: 100, text: "Ready to use" };
+
+      case "failed":
+        return { color: "#dc3545", value: 100, text: "Failed" };
+
+      default:
+        return { color: "gray", value: 0, text: "" };
+    }
+  }, [props.webRTC.status]);
+
   return (
     <li id="webrtc-progress">
       <div
@@ -46,7 +47,11 @@ function WebRTCStatus(props) {
         ></div>
         <span
           id="webrtc-status"
-          style={webRTCState == "new" ? { color: currentProgress.color } : null}
+          style={
+            currentProgress.text == "new"
+              ? { color: currentProgress.color }
+              : null
+          }
         >
           {currentProgress.text}
         </span>
@@ -55,7 +60,15 @@ function WebRTCStatus(props) {
   );
 }
 
-function FileInfo() {
+const WebRTCStatusSTP = (state) => {
+  return {
+    webRTC: state.webRTC,
+  };
+};
+
+const WebRTCStatusReduxed = connect(WebRTCStatusSTP)(WebRTCStatus);
+
+function FileInfo(props) {
   const [isDragging, setIsDragging] = useState(false);
   const [currentFile, setCurrentFile] = useState();
   const inputFile = useRef(null);
@@ -92,69 +105,118 @@ function FileInfo() {
       setCurrentFile(e.target.files[0]);
     };
   };
+  const handleSendFile = () => {
+    if (!props.privateConnection.roomID) {
+      props.notiInfo("Haven't connected private room yet!");
+      setCurrentFile(null);
+      return;
+    }
+    const fileInfo = {
+      name: currentFile.name,
+      size: currentFile.size,
+      modified: currentFile.lastModified,
+      id: "" + currentFile.lastModified + Date.now(),
+      origin: props.user.socketID,
+      state: "waiting",
+    };
+    if (!window.arrayFile) {
+      window.arrayFile = [];
+    }
+    window.arrayFile.push({ id: fileInfo.id, data: currentFile });
+    props.addFileToList(fileInfo);
+    socketIO.exchangeFile(fileInfo, props.privateConnection.roomID);
+    setCurrentFile(null);
+  };
   const fileSize = currentFile
     ? helper.changeSizeValue(currentFile.size)
     : null;
   return (
-    <div
-      id="handle-file"
-      className={`my-1 p-1 pt-2 ${isDragging ? "dragging" : ""}`}
-      onDrop={handleDrop}
-      onDragOver={handleDragOver}
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}
-      onClick={handleOnClick}
-    >
-      <input
-        type="file"
-        id="inputFile"
-        ref={inputFile}
-        style={{ display: "none" }}
-      />
-      {currentFile ? (
-        <div id="file-info">
-          <div
-            id="file-name"
-            ref={fileName}
-            data-bs-placement="right"
-            title={currentFile.name}
-            className="text-truncate"
-            style={isDragging ? null : { pointerEvents: "all" }}
-          >
-            File: {currentFile.name}
+    <>
+      <div
+        id="handle-file"
+        className={`my-1 p-1 pt-2 ${isDragging ? "dragging" : ""}`}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onClick={handleOnClick}
+      >
+        <input
+          type="file"
+          id="inputFile"
+          ref={inputFile}
+          style={{ display: "none" }}
+        />
+        {currentFile ? (
+          <div id="file-info">
+            <div
+              id="file-name"
+              ref={fileName}
+              data-bs-placement="right"
+              title={currentFile.name}
+              className="text-truncate"
+              style={isDragging ? null : { pointerEvents: "all" }}
+            >
+              File: {currentFile.name}
+            </div>
+            <div>
+              <i className="fas fa-boxes"></i> {fileSize.value}{" "}
+              <b>{fileSize.type}</b>
+            </div>
+            <div>
+              <i className="fas fa-wrench"></i>{" "}
+              {helper.getTimeFrom(currentFile.lastModifiedDate)}
+            </div>
           </div>
+        ) : (
           <div>
-            <i className="fas fa-boxes"></i> {fileSize.value}{" "}
-            <b>{fileSize.type}</b>
+            <i
+              className={`fas ${isDragging ? "fa-box-open" : "fa-file-import"}`}
+            ></i>
           </div>
-          <div>
-            <i className="fas fa-wrench"></i>{" "}
-            {helper.getTimeFrom(currentFile.lastModifiedDate)}
-          </div>
+        )}
+      </div>
+      <div className={"d-flex justify-content-around"}>
+        <div className="btn btn-primary" onClick={handleSendFile}>
+          Send
         </div>
-      ) : (
-        <div>
-          <i
-            className={`fas ${isDragging ? "fa-box-open" : "fa-file-import"}`}
-          ></i>
-        </div>
-      )}
-    </div>
+        <div className="btn btn-warning">Stop</div>
+      </div>
+    </>
   );
 }
+
+const FileInfoSTP = (state) => {
+  return { user: state.user, privateConnection: state.privateConnection };
+};
+const FileInfoDTP = (dispatch) => {
+  return {
+    addFileToList: function (data) {
+      return dispatch({ type: "ADD_FILE_LIST", data });
+    },
+    notiInfo: function (text) {
+      return dispatch({
+        type: "UPDATE_HISTORY_LOG",
+        data: {
+          text,
+          time: helper.getTime(),
+          user: "System",
+        },
+      });
+    },
+  };
+};
+
+const FileInfoReduxed = connect(FileInfoSTP, FileInfoDTP)(FileInfo);
 
 function InteractingContent() {
   return (
     <div className="row">
       <ChatContainer />
       <div className="col-3 ">
-        <ul>
-          <WebRTCStatus />
-          <FileInfo />
-          <div className={"d-flex justify-content-around"}>
-            <div className="btn btn-primary">Send</div>
-            <div className="btn btn-warning">Stop</div>
-          </div>
+        <ul style={{ marginBottom: 0 }}>
+          <WebRTCStatusReduxed />
+          <FileInfoReduxed />
         </ul>
       </div>
     </div>
