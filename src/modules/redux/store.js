@@ -1,8 +1,16 @@
 const redux = require("redux");
 
+let defaultData = {
+  name: "DefaultName",
+};
+if (window.electron) {
+  const temp = window.electron.getDefaultData();
+  Object.assign(defaultData, temp);
+}
+
 const defaultState = {
   user: {
-    name: "Linh",
+    name: defaultData.name,
     ip: null,
     port: null,
     socketID: null,
@@ -39,6 +47,11 @@ const defaultState = {
 const userReducer = (state = {}, action) => {
   switch (action.type) {
     case "CHANGE_NAME":
+      if (window.electron) {
+        window.electron.setDefaultData({
+          name: action.data,
+        });
+      }
       return Object.assign({}, state, {
         name: action.data,
       });

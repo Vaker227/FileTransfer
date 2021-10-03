@@ -1,8 +1,12 @@
-import React, { useEffect, useState } from "react";
-import { Dropdown, Modal } from "bootstrap";
+import React from "react";
 import { connect } from "react-redux";
 
 function UserDropDown(props) {
+  const handleExit = () => {
+    if (window.electron) {
+      window.electron.quitApp();
+    }
+  };
   return (
     <div className="dropdown">
       <button
@@ -26,7 +30,11 @@ function UserDropDown(props) {
           <hr className="dropdown-divider" />
         </li>
         <li>
-          <a style={{ cursor: "pointer" }} className="dropdown-item">
+          <a
+            style={{ cursor: "pointer" }}
+            className="dropdown-item"
+            onClick={handleExit}
+          >
             Exit
           </a>
         </li>

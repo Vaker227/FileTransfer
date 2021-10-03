@@ -1,6 +1,14 @@
-const { contextBridge, ipcRenderer } = require("electron");
+const { contextBridge, ipcRenderer, app } = require("electron");
 
 contextBridge.exposeInMainWorld("electron", {
+  // Default data
+  getDefaultData: () => {
+    return ipcRenderer.sendSync("get-default-data");
+  },
+  setDefaultData: (data) => {
+    ipcRenderer.send("set-default-data", JSON.stringify(data));
+  },
+  //save download file
   saveFileTo: (name) => {
     return ipcRenderer
       .invoke("create-file", name)
