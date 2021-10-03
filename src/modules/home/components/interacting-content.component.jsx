@@ -111,6 +111,15 @@ function FileInfo(props) {
       setCurrentFile(null);
       return;
     }
+    if(props.webRTC.status !== 'completed'){
+      props.notiInfo("Can't make a direct connection!, check your NAT type and Server type");
+      setCurrentFile(null);
+      return;
+    }
+    if (!currentFile) {
+      props.notiInfo("Please select file!");
+      return;
+    }
     const fileInfo = {
       name: currentFile.name,
       size: currentFile.size,
@@ -176,18 +185,22 @@ function FileInfo(props) {
           </div>
         )}
       </div>
-      <div className={"d-flex justify-content-around"}>
-        <div className="btn btn-primary" onClick={handleSendFile}>
+      <div className={"d-flex"}>
+        <div className="btn btn-primary flex-grow-1" onClick={handleSendFile}>
           Send
         </div>
-        <div className="btn btn-warning">Stop</div>
       </div>
     </>
   );
 }
 
 const FileInfoSTP = (state) => {
-  return { user: state.user, privateConnection: state.privateConnection };
+  return {
+    user: state.user,
+    status: state.status,
+    privateConnection: state.privateConnection,
+    webRTC: state.webRTC,
+  };
 };
 const FileInfoDTP = (dispatch) => {
   return {
@@ -211,9 +224,9 @@ const FileInfoReduxed = connect(FileInfoSTP, FileInfoDTP)(FileInfo);
 
 function InteractingContent() {
   return (
-    <div className="row">
+    <div className="row mt-4">
       <ChatContainer />
-      <div className="col-3 ">
+      <div className="col-3">
         <ul style={{ marginBottom: 0 }}>
           <WebRTCStatusReduxed />
           <FileInfoReduxed />

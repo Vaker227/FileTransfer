@@ -24,10 +24,11 @@ const defaultState = {
     toServer: false,
     toPeer: false,
     checkingNAT: false,
-    natType: "checking",
+    natType: "checking", // normal, symmetric
   },
   fileManager: {
-    list: [], // file type {name,size,modified(milisecond),id ,origin ,state (waiting, downloading, reject) }
+    list: [], // file type {name, size, modified(milisecond),id ,
+    // origin ,state (waiting, downloading,stopped , reject, completed), percent(downloading) }
     haveNoti: false,
   },
   webRTC: {
@@ -37,6 +38,10 @@ const defaultState = {
 };
 const userReducer = (state = {}, action) => {
   switch (action.type) {
+    case "CHANGE_NAME":
+      return Object.assign({}, state, {
+        name: action.data,
+      });
     case "UPDATE_IP":
       return Object.assign({}, state, {
         ip: action.data.ip.replace("::ffff:", ""),
@@ -177,14 +182,26 @@ const fileManagerReducer = (state = {}, action) => {
       });
       return Object.assign({}, state, { list: newListRemove, haveNoti: true });
     case "UPDATE_STATE_FILE":
-      // action.data: {status(downloading, reject) ,id}
+      // action.data: {state(downloading, reject, completed) ,id}
       const newListUpdate = state.list.map((fileInfo) => {
         if (fileInfo.id == action.data.id) {
-          return Object.assign({}, fileInfo, { state: action.data.state });
+          return Object.assign({}, fileInfo, {
+            state: action.data.state,
+            path: action.data.path,
+          });
         }
         return fileInfo;
       });
       return Object.assign({}, state, { list: newListUpdate, haveNoti: true });
+    case "UPDATE_DOWNLOAD_PROGRESS":
+      // action.data: {percent ,id}
+      const newListProgress = state.list.map((fileInfo) => {
+        if (fileInfo.id == action.data.id) {
+          return Object.assign({}, fileInfo, { percent: action.data.percent });
+        }
+        return fileInfo;
+      });
+      return Object.assign({}, state, { list: newListProgress });
     case "REMOVE_NOTI":
       return Object.assign({}, state, { haveNoti: false });
     default:
@@ -196,7 +213,7 @@ const webRTCReducer = (state = {}, action) => {
     case "UPDATE_WEBRTC_STATUS":
       return Object.assign({}, state, { status: action.data });
     case "SET_WEBRTC_CONFIG":
-      return Object.assign({}, state, { config: action.data });
+      return Object.assign({}, state, { configType: action.data });
 
     default:
       return state;

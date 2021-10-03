@@ -9,6 +9,7 @@ let socket;
 
 module.exports.connect = function () {
   socket = io("https://file-transfers.herokuapp.com/");
+  // socket = io("http://localhost:3000");
   socket.on("connect", () => {
     getPublicIP()
       .then((res) => {
@@ -72,6 +73,9 @@ module.exports.connect = function () {
       return;
     }
     if (data.type == "reject") {
+      window.arrayFile = window.arrayFile.filter((file) => {
+        return file.id != data.data;
+      });
       store.dispatch({
         type: "UPDATE_STATE_FILE",
         data: { state: "reject", id: data.data },
@@ -79,6 +83,11 @@ module.exports.connect = function () {
       return;
     }
     if (data.type == "accept") {
+      const fileWillSend = window.arrayFile.find((file) => {
+        return file.id == data.data;
+      });
+      console.log(fileWillSend);
+      webRTC.startSendingFile(fileWillSend);
       store.dispatch({
         type: "UPDATE_STATE_FILE",
         data: { state: "downloading", id: data.data },
@@ -193,6 +202,14 @@ module.exports.sendMessage = (message, roomID) => {
 module.exports.exchangeFile = (data, roomID) => {
   //data type fileInfo
   socket.emit("private-exchange-file", { type: "offer", data }, roomID);
+};
+
+module.exports.acceptFile = (fileId) => {
+  socket.emit(
+    "private-exchange-file",
+    { type: "accept", data: fileId },
+    store.getState().privateConnection.roomID
+  );
 };
 module.exports.rejectFile = (fileId) => {
   socket.emit(

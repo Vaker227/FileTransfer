@@ -3,6 +3,7 @@ import { connect } from "react-redux";
 import { Tooltip } from "bootstrap";
 
 import "../style/waiting.css";
+import webRTC from "../services/webrtc.service";
 import helper from "../../helper";
 import socketIO from "../services/socketio";
 
@@ -24,10 +25,40 @@ function FileDownloadInfo(props) {
       }, 3000);
     }
   }, [props.fileInfo.state, props.haveNoti]);
-  const handleAcceptFile = () => {};
+  //accept
+  const handleAcceptFile = () => {
+    if (!window.electron) {
+      console.log("electron is null");
+      return;
+    }
+    window.electron.saveFileTo(props.fileInfo.name).then((result) => {
+      if (!result) {
+        return;
+      }
+      webRTC.setReceiveInfo(props.fileInfo, result);
+      props.acceptFile(props.fileInfo.id);
+      socketIO.acceptFile(props.fileInfo.id);
+    });
+  };
+  //reject
   const handleRejectFile = () => {
     props.removeFile(props.fileInfo.id);
     socketIO.rejectFile(props.fileInfo.id);
+  };
+  //stop
+  const handleStopDownload = () => {
+    webRTC.stopDownload();
+  };
+  //remove(completed)
+  const handleRemoveFile = () => {
+    props.removeFile(props.fileInfo.id);
+  };
+  //open folder (completed)
+  const handleOpenFolder = () => {
+    if (!window.electron) {
+      return;
+    }
+    window.electron.openFileInFoler(props.fileInfo.path);
   };
 
   const sizeObj = useMemo(() => {
@@ -57,21 +88,84 @@ function FileDownloadInfo(props) {
           ref={fileName}
         ></i>
       </div>
-      {/* receiver downloading */}
-      {/* <div className="col">
-        <div className="progress">
+      {/*completed */}
+      {props.fileInfo.state == "completed" && (
+        <>
+          <div className="col fw-bold text-success">Finished</div>
+          {!myFile && (
+            <div
+              className="col-2 btn btn-sm"
+              style={{
+                backgroundColor: "#f1b400",
+                borderColor: "#f1b400",
+                color: "white",
+              }}
+              onClick={handleOpenFolder}
+            >
+              <i className="fas fa-folder-open"></i>
+            </div>
+          )}
           <div
-            className="progress-bar "
-            role="progressbar"
-            style={{ width: "75%", height: "100%" }}
+            className="col-2 btn btn-sm btn-secondary"
+            onClick={handleRemoveFile}
           >
-            25%
+            <i className="fas fa-trash"></i>
           </div>
-        </div>
-      </div>
-      <div className="col-1">
-        <div className="spinner-grow text-primary"></div>
-      </div> */}
+        </>
+      )}
+      {/*stopped */}
+      {props.fileInfo.state == "stopped" && (
+        <>
+          <div className="col">
+            <div className="progress">
+              <div
+                className="progress-bar bg-warning"
+                role="progressbar"
+                style={{
+                  width: `${props.fileInfo.percent || 0}%`,
+                  height: "100%",
+                }}
+              >
+                {props.fileInfo.percent}%
+              </div>
+            </div>
+          </div>
+          <div
+            className="col-2 btn btn-sm btn-secondary"
+            onClick={handleRemoveFile}
+          >
+            <i className="fas fa-trash"></i>
+          </div>
+        </>
+      )}
+      {/*downloading */}
+      {props.fileInfo.state == "downloading" && (
+        <>
+          <div className="col">
+            <div className="progress">
+              <div
+                className="progress-bar "
+                role="progressbar"
+                style={{
+                  width: `${props.fileInfo.percent || 0}%`,
+                  height: "100%",
+                }}
+              >
+                {props.fileInfo.percent}%
+              </div>
+            </div>
+          </div>
+          <div className="col-1">
+            <div className="spinner-grow text-primary"></div>
+          </div>
+          <div
+            className="col-2 btn btn-sm btn-danger"
+            onClick={handleStopDownload}
+          >
+            <i className="far fa-stop-circle"></i>
+          </div>
+        </>
+      )}
       {/* sender rejected */}
       {props.fileInfo.state == "reject" && (
         <>
@@ -120,7 +214,18 @@ const FileDownloadInfoSTP = (state) => {
 const FileDownloadInfoDTP = (dispatch) => {
   return {
     removeFile: function (fileId) {
+      if (window.arrayFile) {
+        window.arrayFile = window.arrayFile.filter((file) => {
+          return file.id != fileId;
+        });
+      }
       return dispatch({ type: "REMOVE_FILE_LIST", data: fileId });
+    },
+    acceptFile: function (fileId) {
+      return dispatch({
+        type: "UPDATE_STATE_FILE",
+        data: { state: "downloading", id: fileId },
+      });
     },
   };
 };

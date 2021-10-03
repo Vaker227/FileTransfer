@@ -38,3 +38,7 @@ module.exports.notiMessage = (message) => {
     user: "System",
   };
 };
+
+module.exports.collectGarbage = () => {
+  URL.revokeObjectURL(URL.createObjectURL(new Blob([1])));
+};

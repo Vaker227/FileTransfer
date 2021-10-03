@@ -1,5 +1,5 @@
-import React from "react";
-import { Dropdown } from "bootstrap";
+import React, { useEffect, useState } from "react";
+import { Dropdown, Modal } from "bootstrap";
 import { connect } from "react-redux";
 
 function UserDropDown(props) {
@@ -14,13 +14,12 @@ function UserDropDown(props) {
       </button>
       <ul className="dropdown-menu">
         <li>
-          <a style={{ cursor: "pointer" }} className="dropdown-item">
+          <a
+            style={{ cursor: "pointer" }}
+            className="dropdown-item"
+            onClick={props.openSettingModal}
+          >
             Setting
-          </a>
-        </li>
-        <li>
-          <a style={{ cursor: "pointer" }} className="dropdown-item">
-            Logout
           </a>
         </li>
         <li>

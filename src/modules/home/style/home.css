@@ -68,7 +68,7 @@ body {
 
 /* view body */
 #clients-view-body {
-  height: 150px;
+  height: 190px;
   overflow-y: overlay;
 }
 
@@ -141,8 +141,8 @@ body {
   top: -31px;
 }
 #file-manager > .dropdown-menu {
-  transform: translate(-120px, 33px) !important;
-  width: 15rem;
+  transform: translate(-135px, 33px) !important;
+  width: 16rem;
 }
 #file-manager .file-download-info {
   padding: 1px 0;

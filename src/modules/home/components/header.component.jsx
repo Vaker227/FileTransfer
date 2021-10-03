@@ -4,6 +4,202 @@ import { connect } from "react-redux";
 
 import UserDropDown from "./user-info.component.jsx";
 import socketIO from "../services/socketio";
+import { testTURN } from "../services/webrtc.service";
+import helper from "../../helper";
+
+function SettingModal(props) {
+  const [edittingName, setEdittingName] = useState(false);
+  const [nameText, setNameText] = useState(props.user.name);
+  const [testingServer, setTestingServer] = useState(false);
+  const [configServer, setConfigServer] = useState(props.webRTC.configType);
+  const [haveChecked, setHaveChecked] = useState(false);
+  const [resultCheck, setResultCheck] = useState(false);
+  const nameElement = useRef();
+  const changeNameText = () => {
+    setNameText(nameElement.current.value);
+    setEdittingName(false);
+  };
+  const resetValue = () => {
+    setEdittingName(false);
+    setNameText(props.user.name);
+    setHaveChecked(false);
+    setConfigServer(props.webRTC.configType);
+  };
+  const handleNameKeyDown = (e) => {
+    if (e.code == "Enter" || e.code == "NumpadEnter") {
+      changeNameText();
+      return;
+    }
+    if (e.code == "Escape") {
+      setNameText(props.user.name);
+      setEdittingName(false);
+    }
+  };
+  const handleConfigChange = (e) => {
+    setTestingServer(true);
+    if (e.target.value == "turn") {
+      testTURN((result) => {
+        setHaveChecked(true);
+        setTestingServer(false);
+        setResultCheck(result);
+        if (result) {
+          setConfigServer("turn");
+        }
+      });
+      return;
+    }
+    setConfigServer("stun");
+  };
+  const saveChanges = () => {
+    let isChanged = false;
+    if (nameText != props.user.name) {
+      props.changeName(nameText);
+      isChanged = true;
+    }
+    if (configServer != props.webRTC.configType) {
+      props.changeConfigServer(configServer);
+      isChanged = true;
+    }
+    if (!isChanged) {
+      props.closeSettingModal();
+      resetValue();
+      return;
+    }
+    socketIO.disconnect();
+    socketIO.reconnect();
+    props.closeSettingModal();
+    resetValue();
+  };
+
+  return (
+    <div className="modal" id="setting-modal" tabIndex="-1">
+      <div className="modal-dialog">
+        <div className="modal-content">
+          <div className="modal-header">
+            <h5 className="modal-title">Setting</h5>
+            <button
+              className="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+              onClick={resetValue}
+            ></button>
+          </div>
+          <div className="modal-body">
+            <div className="mb-3">
+              <span className="fw-bold">Your name: </span>
+              {edittingName ? (
+                <div
+                  className="input-group input-group-sm"
+                  style={{
+                    width: "auto",
+                    display: "inline-flex",
+                  }}
+                >
+                  <input
+                    type="text"
+                    className="form-control"
+                    onKeyDown={handleNameKeyDown}
+                    ref={nameElement}
+                  />
+                  <span className="input-group-text">
+                    <i
+                      className="fas fa-undo"
+                      style={{ cursor: "pointer" }}
+                      onClick={resetValue}
+                    ></i>
+                  </span>
+                  <span className="input-group-text">
+                    <i
+                      className="fas fa-check"
+                      style={{ cursor: "pointer" }}
+                      onClick={changeNameText}
+                    ></i>
+                  </span>
+                </div>
+              ) : (
+                <>
+                  {nameText}
+                  <i
+                    className="ps-2 fas fa-edit"
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setEdittingName(true)}
+                  ></i>
+                </>
+              )}
+            </div>
+            <div>
+              <span className="fw-bold">Config Server: </span>
+              <select
+                className="form-select mb-3"
+                style={{ width: "auto", display: "inline-block" }}
+                onChange={handleConfigChange}
+                value={configServer}
+              >
+                <option value="stun">STUN</option>
+                <option value="turn">TURN</option>
+              </select>
+              {testingServer ? (
+                <div
+                  className="spinner-border text-primary"
+                  style={{
+                    width: 30,
+                    height: 30,
+                    position: "relative",
+                    top: 6,
+                    left: 10,
+                  }}
+                ></div>
+              ) : haveChecked ? (
+                <>
+                  {resultCheck ? (
+                    <i className="fas fa-check ms-2 fs-1 text-success align-middle"></i>
+                  ) : (
+                    <i className="fas fa-times ms-2 fs-1 text-danger align-middle"></i>
+                  )}
+                </>
+              ) : (
+                ""
+              )}
+            </div>
+          </div>
+          <div className="modal-footer">
+            <button
+              className="btn btn-secondary"
+              data-bs-dismiss="modal"
+              onClick={resetValue}
+            >
+              Close
+            </button>
+            <button className="btn btn-primary" onClick={saveChanges}>
+              Save changes
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+const SettingModalSTP = (state) => {
+  return {
+    user: state.user,
+    webRTC: state.webRTC,
+  };
+};
+const SettingModalDTP = (dispatch) => {
+  return {
+    changeName: function (name) {
+      return dispatch({ type: "CHANGE_NAME", data: name });
+    },
+    changeConfigServer: function (type) {
+      return dispatch({ type: "SET_WEBRTC_CONFIG", data: type });
+    },
+  };
+};
+
+const SettingModalReduxed = connect(
+  SettingModalSTP,
+  SettingModalDTP
+)(SettingModal);
 
 function NotiRequestPrivateConnection(props) {
   const handleAccept = () => {
@@ -11,7 +207,6 @@ function NotiRequestPrivateConnection(props) {
     props.endReceivingPhase(true);
   };
   const handleReject = () => {
-    console.log("end receiving request");
     socketIO.rejectPrivateConnection();
     props.endReceivingPhase();
   };
@@ -33,7 +228,6 @@ function NotiRequestPrivateConnection(props) {
           </div>
           <div className="modal-footer">
             <button
-              type="button"
               className="btn btn-danger"
               data-bs-dismiss="modal"
               onClick={handleReject}
@@ -41,7 +235,6 @@ function NotiRequestPrivateConnection(props) {
               <i className="far fa-times-circle"></i>
             </button>
             <button
-              type="button"
               className="btn btn-success-custom"
               data-bs-dismiss="modal"
               onClick={handleAccept}
@@ -88,7 +281,7 @@ function CheckNAT(props) {
           //clear checkNat
           checkNAT.close();
           checkNAT = null;
-          URL.revokeObjectURL(URL.createObjectURL(new Blob([1])));
+          helper.collectGarbage();
         }
       }
     };
@@ -108,7 +301,7 @@ function CheckNAT(props) {
           ? "We're checking your NAT type"
           : props.status.natType == "normal"
           ? "Your NAT type is ready to connect"
-          : "Your NAT type is symestic mean you need switch to TURN server (Setting)"
+          : "Your NAT type is symmetric mean you need use TURN server (Setting)"
       }
       id="check-nat"
       ref={checkNATRef}
@@ -126,34 +319,51 @@ function CheckNAT(props) {
 }
 
 const Header = (props) => {
-  const [modal, setModal] = useState(null);
+  const [requestModal, setRequestModal] = useState(null);
+  const [settingModal, setSettingModal] = useState(null);
+  // tooltip
   useEffect(() => {
     let ipTooltip = new Tooltip(document.getElementById("publicIp"));
     return () => {
       ipTooltip.dispose();
     };
   }, [props.status.toServer]);
+  // modal
   useEffect(() => {
-    setModal(
+    setSettingModal(
+      new Modal(document.getElementById("setting-modal"), { keyboard: false })
+    );
+    setRequestModal(
       new Modal(document.getElementById("requestModal"), { keyboard: false })
     );
     return () => {
-      console.log("header unmount");
-      if (modal) {
-        modal.dispose();
+      if (settingModal) {
+        settingModal.dispose();
+      }
+      if (requestModal) {
+        requestModal.dispose();
       }
     };
   }, []);
   useEffect(() => {
     if (props.privateConnection.isReceivingRequest) {
-      modal.show();
+      requestModal.show();
     }
     if (!props.privateConnection.isReceivingRequest) {
-      if (modal) {
-        modal.hide();
+      if (requestModal) {
+        requestModal.hide();
       }
     }
   }, [props.privateConnection.isReceivingRequest]);
+
+  const openSettingModal = () => {
+    settingModal.show();
+  };
+  const closeSettingModal = () => {
+    settingModal.hide();
+  };
+
+  // noti template
   const notiLostConnection = (
     <div
       className={`float-start ms-4 btn btn-danger`}
@@ -185,12 +395,13 @@ const Header = (props) => {
     <div>
       {props.status.toServer ? notiPublicIP : notiLostConnection}
       <div className="float-end me-4 " id="user">
-        <UserDropDown />
+        <UserDropDown openSettingModal={openSettingModal} />
       </div>
       <NotiRequestPrivateConnection
         targetID={props.privateConnection.targetID}
         endReceivingPhase={props.endReceivingPhase}
       />
+      <SettingModalReduxed closeSettingModal={closeSettingModal} />
     </div>
   );
 };

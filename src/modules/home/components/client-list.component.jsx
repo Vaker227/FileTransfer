@@ -226,7 +226,7 @@ function ClientList(props) {
                 Disconnect Peer
               </button>
             </li>
-            <li>
+            {/* <li>
               <button
                 className="btn btn-sm btn-success"
                 onClick={() => socketIO.disconnect()}
@@ -241,7 +241,7 @@ function ClientList(props) {
               >
                 Reconnect Sever
               </button>
-            </li>
+            </li> */}
           </ul>
         </div>
       </div>

@@ -6,7 +6,7 @@ import InteractingContent from "./interacting-content.component.jsx";
 function InteractingView() {
   return (
     <div className="container pt-3">
-      <TargetInfo />
+      {/* <TargetInfo /> */}
       <InteractingContent />
     </div>
   );
