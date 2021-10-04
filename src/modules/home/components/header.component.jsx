@@ -166,11 +166,16 @@ function SettingModal(props) {
             <button
               className="btn btn-secondary"
               data-bs-dismiss="modal"
+              style={{ fontSize: "1rem", padding: ".375rem .75rem" }}
               onClick={resetValue}
             >
               Close
             </button>
-            <button className="btn btn-primary" onClick={saveChanges}>
+            <button
+              className="btn btn-primary"
+              style={{ fontSize: "1rem", padding: ".375rem .75rem" }}
+              onClick={saveChanges}
+            >
               Save changes
             </button>
           </div>
