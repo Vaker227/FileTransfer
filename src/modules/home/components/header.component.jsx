@@ -15,15 +15,41 @@ function SettingModal(props) {
   const [haveChecked, setHaveChecked] = useState(false);
   const [resultCheck, setResultCheck] = useState(false);
   const nameElement = useRef();
-  const changeNameText = () => {
-    setNameText(nameElement.current.value);
-    setEdittingName(false);
-  };
+  // tooltip checking turn server result
+  useEffect(() => {
+    if (testingServer) {
+      const checking = new Tooltip(
+        document.getElementById("turn-server-checking")
+      );
+      return () => {
+        checking.dispose();
+      };
+    }
+    if (haveChecked && resultCheck) {
+      const success = new Tooltip(
+        document.getElementById("turn-server-online")
+      );
+      return () => {
+        success.dispose();
+      };
+    }
+    if (haveChecked && !resultCheck) {
+      const fail = new Tooltip(document.getElementById("turn-server-offline"));
+      return () => {
+        fail.dispose();
+      };
+    }
+  }, [testingServer, haveChecked]);
   const resetValue = () => {
     setEdittingName(false);
     setNameText(props.user.name);
     setHaveChecked(false);
     setConfigServer(props.webRTC.configType);
+  };
+  // name change
+  const changeNameText = () => {
+    setNameText(nameElement.current.value);
+    setEdittingName(false);
   };
   const handleNameKeyDown = (e) => {
     if (e.code == "Enter" || e.code == "NumpadEnter") {
@@ -148,13 +174,26 @@ function SettingModal(props) {
                     top: 6,
                     left: 10,
                   }}
+                  id="turn-server-checking"
+                  data-bs-placement="right"
+                  title="Checking turn server, please wait (~7s)"
                 ></div>
               ) : haveChecked ? (
                 <>
                   {resultCheck ? (
-                    <i className="fas fa-check ms-2 fs-1 text-success align-middle"></i>
+                    <i
+                      className="fas fa-check ms-2 fs-1 text-success align-middle"
+                      id="turn-server-online"
+                      data-bs-placement="right"
+                      title="Turn server ready to use"
+                    ></i>
                   ) : (
-                    <i className="fas fa-times ms-2 fs-1 text-danger align-middle"></i>
+                    <i
+                      className="fas fa-times ms-2 fs-1 text-danger align-middle"
+                      id="turn-server-offline"
+                      data-bs-placement="right"
+                      title="Turn server is not working now"
+                    ></i>
                   )}
                 </>
               ) : (
@@ -299,7 +338,9 @@ function CheckNAT(props) {
   }, []);
   return (
     <div
-      className={`float-start ms-2 btn btn-primary`}
+      className={`float-start ms-2 btn btn-${
+        props.status.natType == "symmetric" ? "danger" : "primary"
+      }`}
       data-bs-placement="right"
       title={
         props.status.natType == "checking"
