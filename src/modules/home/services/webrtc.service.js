@@ -224,7 +224,10 @@ function composePacket(packetNumber, last = false) {
 }
 
 function createPeerConnection() {
-  pc = new RTCPeerConnection(configPeerSTUN);
+  const serverType = store.getState().webRTC.configType;
+  pc = new RTCPeerConnection(
+    serverType == "stun" ? configPeerSTUN : configPeerTURN
+  );
   pc.onicecandidate = (e) => {
     socketIO.sendRTCData({ cand: e.candidate });
   };

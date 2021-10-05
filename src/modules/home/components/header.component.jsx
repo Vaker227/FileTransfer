@@ -61,6 +61,7 @@ function SettingModal(props) {
       setEdittingName(false);
     }
   };
+  // change server config
   const handleConfigChange = (e) => {
     setTestingServer(true);
     if (e.target.value == "turn") {
@@ -83,6 +84,7 @@ function SettingModal(props) {
       isChanged = true;
     }
     if (configServer != props.webRTC.configType) {
+      console.log(configServer)
       props.changeConfigServer(configServer);
       isChanged = true;
     }
